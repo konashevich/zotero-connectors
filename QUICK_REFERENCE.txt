@@ -1,0 +1,194 @@
+╔═══════════════════════════════════════════════════════════════════════════╗
+║               ZOTERO CONNECTOR - QUICK REFERENCE CARD                     ║
+║                    Pre-Configured Authentication                          ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ YOUR CREDENTIALS                                                          │
+├───────────────────────────────────────────────────────────────────────────┤
+│ Username:    oleksiiko                                                    │
+│ User ID:     14105076                                                     │
+│ Email:       a.konashevich@gmail.com                                      │
+│ API Key:     [See myzotero.md - 24 characters, starts with E1sO]        │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ URLS                                                                      │
+├───────────────────────────────────────────────────────────────────────────┤
+│ Local Web UI:     http://192.168.1.114:9092/oleksiiko/library           │
+│                   http://localhost:9092/ (from same machine)             │
+│ Official Web:     https://www.zotero.org/oleksiiko/library              │
+│ API Endpoint:     https://api.zotero.org/users/14105076/                │
+│ Manage Keys:      https://www.zotero.org/settings/keys                  │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ QUICK SETUP                                                               │
+├───────────────────────────────────────────────────────────────────────────┤
+│ 1. Edit: src/common/zotero_config.js                                     │
+│    - Set ENABLED: true                                                   │
+│    - Set API_KEY: 'YOUR_KEY'                                             │
+│    - Set USER_ID: '14105076'                                             │
+│    - Set USERNAME: 'oleksiiko'                                           │
+│                                                                           │
+│ 2. Build:                                                                │
+│    cd /mnt/merged_ssd/Zotero/zotero-connectors                          │
+│    npm install                                                           │
+│    npm run build                                                         │
+│                                                                           │
+│ 3. Install:                                                              │
+│    Chrome:   chrome://extensions/ → Load unpacked → build/browserExt/   │
+│    Firefox:  about:debugging → Load Temporary → build/browserExt/       │
+│    Edge:     edge://extensions/ → Load unpacked → build/browserExt/     │
+│                                                                           │
+│ 4. Test: Visit article page, click Zotero icon, save item               │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ FILE LOCATIONS                                                            │
+├───────────────────────────────────────────────────────────────────────────┤
+│ Config file:  src/common/zotero_config.js                               │
+│ Build output: build/browserExt/                                          │
+│ Documentation:                                                            │
+│   - YOUR_SETUP.md                    (start here!)                       │
+│   - SETUP_PRECONFIGURED_AUTH.md      (detailed guide)                    │
+│   - README_PRECONFIGURED_AUTH.md     (overview)                          │
+│   - IMPLEMENTATION_SUMMARY.md        (what changed)                      │
+│   - CHECKLIST.md                     (step-by-step)                      │
+│   - ARCHITECTURE_DIAGRAM.txt         (visual diagrams)                   │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ COMMANDS                                                                  │
+├───────────────────────────────────────────────────────────────────────────┤
+│ # Build extension                                                        │
+│ npm run build                                                            │
+│                                                                           │
+│ # Clean rebuild                                                          │
+│ rm -rf node_modules package-lock.json && npm install && npm run build   │
+│                                                                           │
+│ # Test API key                                                           │
+│ curl -I -H "Zotero-API-Key: YOUR_KEY" \                                 │
+│   "https://api.zotero.org/users/14105076/collections?limit=1"           │
+│                                                                           │
+│ # Check Docker container (local web UI)                                 │
+│ docker ps | grep zotero-web-live                                         │
+│ docker logs zotero-web-live                                              │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ BROWSER CONSOLE COMMANDS                                                  │
+├───────────────────────────────────────────────────────────────────────────┤
+│ # Get current credentials                                                │
+│ await Zotero.API.getUserInfo()                                           │
+│                                                                           │
+│ # Set credentials                                                        │
+│ await Zotero.API.setCredentials('API_KEY', '14105076', 'oleksiiko')     │
+│                                                                           │
+│ # Clear credentials                                                      │
+│ await Zotero.API.clearCredentials()                                      │
+│                                                                           │
+│ # Re-initialize from config                                              │
+│ await Zotero.API.initPreconfiguredAuth()                                 │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ TESTING                                                                   │
+├───────────────────────────────────────────────────────────────────────────┤
+│ Test sites:                                                              │
+│   - https://pubmed.ncbi.nlm.nih.gov/36635864/                           │
+│   - https://arxiv.org/abs/2301.00001                                    │
+│   - Any journal article page                                             │
+│                                                                           │
+│ Expected behavior:                                                        │
+│   1. Icon shows document/book symbol (item detected)                     │
+│   2. Click icon → Save dialog appears                                    │
+│   3. No OAuth prompt                                                     │
+│   4. Success message appears                                             │
+│   5. Item appears in library                                             │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                           │
+├───────────────────────────────────────────────────────────────────────────┤
+│ OAuth still appears:                                                      │
+│   → Check ENABLED: true in config                                        │
+│   → Rebuild and reload extension                                         │
+│                                                                           │
+│ 403 Forbidden:                                                           │
+│   → Check key permissions at zotero.org/settings/keys                    │
+│   → Key needs "library access" and "write access"                        │
+│                                                                           │
+│ Wrong account:                                                           │
+│   → Verify User ID matches API key owner                                 │
+│   → Clear credentials: await Zotero.API.clearCredentials()              │
+│                                                                           │
+│ Build fails:                                                             │
+│   → Delete node_modules and package-lock.json                            │
+│   → Run npm install again                                                │
+│                                                                           │
+│ Items don't appear:                                                      │
+│   → Hard refresh browser (Ctrl+Shift+R)                                  │
+│   → Check api.zotero.org is accessible                                   │
+│   → Test API key with curl command                                       │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ WHAT CHANGED                                                              │
+├───────────────────────────────────────────────────────────────────────────┤
+│ Modified files (3):                                                       │
+│   1. src/common/zotero_config.js - Added PRECONFIGURED_AUTH section     │
+│   2. src/common/api.js - Added setCredentials() & init methods          │
+│   3. src/common/zotero.js - Added initialization call                    │
+│                                                                           │
+│ How it works:                                                            │
+│   Extension startup → initPreconfiguredAuth() → Store credentials →     │
+│   → All API requests use stored key → No OAuth needed ✓                 │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ ARCHITECTURE                                                              │
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  Browser Extension (Modified)                                            │
+│         │                                                                 │
+│         │ HTTPS + Zotero-API-Key: E1sO...                               │
+│         ↓                                                                 │
+│  api.zotero.org (Official Zotero API)                                   │
+│         │                                                                 │
+│         │ Your Account: oleksiiko (14105076)                             │
+│         │                                                                 │
+│    ┌────┴────┬────────────┬─────────────────┐                          │
+│    ↓         ↓            ↓                 ↓                            │
+│  Desktop   Official    Local Web UI    Mobile App                        │
+│  Client    Web UI      192.168.1.114   (future)                         │
+│                        :9092                                              │
+│                                                                           │
+│  All components use same API key, same backend, same data               │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ SECURITY NOTES                                                            │
+├───────────────────────────────────────────────────────────────────────────┤
+│ ⚠️  API key = full library access                                        │
+│ ⚠️  Never commit keys to public repos                                    │
+│ ⚠️  Rotate keys periodically                                             │
+│ ⚠️  Use separate keys for dev/prod                                       │
+│ ⚠️  Monitor key usage at zotero.org/settings/keys                        │
+│                                                                           │
+│ To exclude from git:                                                     │
+│   echo "src/common/zotero_config.js" >> .git/info/exclude               │
+└───────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────┐
+│ SUPPORT                                                                   │
+├───────────────────────────────────────────────────────────────────────────┤
+│ Documentation:  See YOUR_SETUP.md and SETUP_PRECONFIGURED_AUTH.md       │
+│ Zotero API:     https://www.zotero.org/support/dev/web_api/v3/start     │
+│ Zotero Forums:  https://forums.zotero.org/                              │
+│ Key Management: https://www.zotero.org/settings/keys                     │
+└───────────────────────────────────────────────────────────────────────────┘
+
+╔═══════════════════════════════════════════════════════════════════════════╗
+║  READY TO USE! Follow YOUR_SETUP.md to complete configuration           ║
+╚═══════════════════════════════════════════════════════════════════════════╝

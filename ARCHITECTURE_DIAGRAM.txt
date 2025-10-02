@@ -1,0 +1,246 @@
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                     Your Zotero Setup Architecture                           │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+                        BEFORE (Standard Setup)
+                        ═══════════════════════
+                                
+┌─────────────────────┐                    ┌──────────────────┐
+│  Browser Extension  │                    │  Zotero.org      │
+│  (Standard)         │───── OAuth ───────▶│  Authorization   │
+│                     │                    │  Flow            │
+└──────────┬──────────┘                    └────────┬─────────┘
+           │                                        │
+           │         After OAuth completes:         │
+           │         Gets temporary token           │
+           │                                        │
+           └──────────── API Key ──────────────────┘
+                            │
+                            ↓
+                    ┌─────────────────┐
+                    │  api.zotero.org │
+                    │  Backend        │
+                    └─────────────────┘
+
+
+                        AFTER (Your Setup)
+                        ══════════════════
+                                
+┌─────────────────────────────────────────────────────────────┐
+│  Browser with Modified Extension                            │
+│  ┌────────────────────────────────────────────────────┐    │
+│  │  zotero_config.js                                  │    │
+│  │  PRECONFIGURED_AUTH: {                             │    │
+│  │    ENABLED: true,                                  │    │
+│  │    API_KEY: 'E1sO...',    ← Your 24-char key     │    │
+│  │    USER_ID: '14105076',   ← Your user ID          │    │
+│  │    USERNAME: 'oleksiiko'  ← Your username         │    │
+│  │  }                                                 │    │
+│  └────────────────────────────────────────────────────┘    │
+│                           │                                  │
+│                           ↓ On startup                      │
+│              Zotero.API.initPreconfiguredAuth()             │
+│                           │                                  │
+│                           ↓ Stores in browser.storage       │
+│              [auth-token_secret, auth-userID, ...]          │
+└───────────────────────────┬─────────────────────────────────┘
+                            │
+                            │ All requests include:
+                            │ Header: Zotero-API-Key: E1sO...
+                            │
+                            ↓
+                    ┌─────────────────┐
+                    │  api.zotero.org │
+                    │                 │
+                    │  - Validates    │
+                    │    API key      │
+                    │  - Returns      │
+                    │    your data    │
+                    └────────┬────────┘
+                             │
+              ┌──────────────┼──────────────┐
+              │              │               │
+              ↓              ↓               ↓
+    ┌─────────────┐  ┌──────────────┐  ┌─────────────────────┐
+    │  Desktop    │  │  Official    │  │  Your Local Web UI  │
+    │  Client     │  │  Web UI      │  │  192.168.1.114:9092 │
+    │             │  │  zotero.org  │  │                     │
+    │  - Syncs    │  │              │  │  - Same API key     │
+    │  - Same     │  │  - Same data │  │  - Same data        │
+    │    account  │  │  - Same      │  │  - Docker container │
+    │             │  │    account   │  │  - Nginx frontend   │
+    └─────────────┘  └──────────────┘  └─────────────────────┘
+                             │
+                             ↓
+                    All use same backend:
+                       api.zotero.org
+                    User: oleksiiko (14105076)
+
+
+                        DATA FLOW
+                        ═════════
+
+    1. User clicks Zotero Connector on article page
+                    ↓
+    2. Extension scrapes metadata from page
+                    ↓
+    3. POST request to api.zotero.org/users/14105076/items
+       Headers: {
+         "Zotero-API-Key": "E1sO...",
+         "Content-Type": "application/json"
+       }
+       Body: { title: "...", authors: [...], ... }
+                    ↓
+    4. Zotero API validates key, saves item
+                    ↓
+    5. Item appears in:
+       - Official web UI
+       - Local web UI (after refresh)
+       - Desktop client (after sync)
+
+
+                    AUTHENTICATION COMPARISON
+                    ═════════════════════════
+
+┌─────────────────┬─────────────────────┬──────────────────────┐
+│                 │  Standard OAuth     │  Pre-configured      │
+├─────────────────┼─────────────────────┼──────────────────────┤
+│ First use       │ OAuth popup appears │ No prompt needed     │
+│ Setup time      │ 30 seconds          │ Instant              │
+│ User action     │ Click "Authorize"   │ None                 │
+│ Deployment      │ Each user manually  │ Pre-built extension  │
+│ API key source  │ Generated via OAuth │ Your existing key    │
+│ Security        │ Secure (OAuth flow) │ Secure (direct key)  │
+│ Flexibility     │ One account/profile │ Easy multi-profile   │
+└─────────────────┴─────────────────────┴──────────────────────┘
+
+
+                        FILE CHANGES
+                        ════════════
+
+src/common/zotero_config.js
+┌────────────────────────────────────────────────────┐
+│ const ZOTERO_CONFIG = {                            │
+│   ...                                              │
+│   API_URL: 'https://api.zotero.org/',            │
+│                                                    │
+│   // NEW: Pre-configured credentials              │
+│   PRECONFIGURED_AUTH: {                           │
+│     ENABLED: false,  ← Change to true             │
+│     API_KEY: '',     ← Add your key               │
+│     USER_ID: '',     ← Add your ID                │
+│     USERNAME: ''     ← Add your username          │
+│   },                                              │
+│   ...                                              │
+│ }                                                  │
+└────────────────────────────────────────────────────┘
+
+src/common/api.js
+┌────────────────────────────────────────────────────┐
+│ // NEW METHOD                                      │
+│ this.setCredentials = async function(apiKey,      │
+│                                      userID,       │
+│                                      username) {   │
+│   await Zotero.Prefs.set('auth-token_secret',    │
+│                           apiKey);                 │
+│   await Zotero.Prefs.set('auth-userID', userID); │
+│   await Zotero.Prefs.set('auth-username',        │
+│                           username);               │
+│ }                                                  │
+│                                                    │
+│ // NEW METHOD                                      │
+│ this.initPreconfiguredAuth = async function() {   │
+│   if (config.PRECONFIGURED_AUTH.ENABLED) {       │
+│     await this.setCredentials(                    │
+│       config.PRECONFIGURED_AUTH.API_KEY,         │
+│       config.PRECONFIGURED_AUTH.USER_ID,         │
+│       config.PRECONFIGURED_AUTH.USERNAME         │
+│     );                                            │
+│   }                                               │
+│ }                                                  │
+└────────────────────────────────────────────────────┘
+
+src/common/zotero.js
+┌────────────────────────────────────────────────────┐
+│ this.initGlobal = async function() {              │
+│   ...                                              │
+│   await Zotero.i18n.init();                       │
+│   Zotero.Translators.init();                      │
+│                                                    │
+│   // NEW: Initialize pre-configured auth          │
+│   await Zotero.API.initPreconfiguredAuth();      │
+│                                                    │
+│   Zotero.initDeferred.resolve();                  │
+│   ...                                              │
+│ }                                                  │
+└────────────────────────────────────────────────────┘
+
+
+                    STORAGE LOCATIONS
+                    ═════════════════
+
+Browser Extension Storage (browser.storage.local)
+┌────────────────────────────────────────────────┐
+│ Key: auth-token_secret                         │
+│ Value: "E1sO..."                              │
+│                                                │
+│ Key: auth-userID                               │
+│ Value: "14105076"                              │
+│                                                │
+│ Key: auth-username                             │
+│ Value: "oleksiiko"                             │
+└────────────────────────────────────────────────┘
+
+Docker Container (zotero-web-live)
+┌────────────────────────────────────────────────┐
+│ Environment Variables:                         │
+│   API_KEY=E1sO...                             │
+│   USER_ID=14105076                             │
+│   USER_SLUG=oleksiiko                          │
+│                                                │
+│ Injected into /usr/share/nginx/html/index.html│
+│   <script id="zotero-web-library-config">     │
+│   { "apiKey": "E1sO...",                      │
+│     "userId": "14105076",                      │
+│     "userSlug": "oleksiiko" }                  │
+│   </script>                                    │
+└────────────────────────────────────────────────┘
+
+
+                    QUICK REFERENCE
+                    ═══════════════
+
+Your Details:
+  Email: a.konashevich@gmail.com
+  Username: oleksiiko
+  User ID: 14105076
+  API Key: [See myzotero.md - starts with E1sO]
+
+URLs:
+  Local Web UI: http://192.168.1.114:9092/oleksiiko/library
+  Official Web: https://www.zotero.org/oleksiiko/library
+  API Endpoint: https://api.zotero.org/users/14105076/
+  API Keys Mgmt: https://www.zotero.org/settings/keys
+
+Build Commands:
+  npm install
+  npm run build
+  # Extension in: build/browserExt/
+
+Test Command:
+  curl -H "Zotero-API-Key: YOUR_KEY" \
+    "https://api.zotero.org/users/14105076/collections?limit=1"
+
+Debug Commands (in browser console):
+  await Zotero.API.getUserInfo()
+  await Zotero.API.setCredentials('KEY', 'ID', 'USERNAME')
+  await Zotero.API.clearCredentials()
+  await Zotero.API.initPreconfiguredAuth()
+
+
+═══════════════════════════════════════════════════════════════
+ For full documentation, see:
+   - YOUR_SETUP.md (your specific configuration)
+   - SETUP_PRECONFIGURED_AUTH.md (detailed guide)
+   - README_PRECONFIGURED_AUTH.md (overview)
+═══════════════════════════════════════════════════════════════

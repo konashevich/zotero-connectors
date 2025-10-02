@@ -191,6 +191,44 @@ Zotero.API = new function() {
 	};
 	
 	/**
+	 * Sets credentials directly without OAuth flow
+	 * Useful for pre-configured API keys
+	 */
+	this.setCredentials = async function(apiKey, userID, username) {
+		if (!apiKey || !userID) {
+			throw new Error('API key and user ID are required');
+		}
+		await Zotero.Prefs.set('auth-token_secret', apiKey);
+		await Zotero.Prefs.set('auth-userID', userID);
+		if (username) {
+			await Zotero.Prefs.set('auth-username', username);
+		}
+		Zotero.debug(`Direct credentials set for user ${userID} (${username || 'username not provided'})`);
+		return {"auth-username": username, "auth-userID": userID};
+	};
+	
+	/**
+	 * Initializes pre-configured credentials if enabled in config
+	 */
+	this.initPreconfiguredAuth = async function() {
+		if (config.PRECONFIGURED_AUTH && config.PRECONFIGURED_AUTH.ENABLED) {
+			const { API_KEY, USER_ID, USERNAME } = config.PRECONFIGURED_AUTH;
+			if (API_KEY && USER_ID) {
+				Zotero.debug('Initializing pre-configured authentication');
+				try {
+					await this.setCredentials(API_KEY, USER_ID, USERNAME);
+					Zotero.debug('Pre-configured authentication initialized successfully');
+					return true;
+				} catch (e) {
+					Zotero.logError('Failed to initialize pre-configured authentication: ' + e.message);
+					return false;
+				}
+			}
+		}
+		return false;
+	};
+	
+	/**
 	 * Gets authorized username
 	 * @param {Function} callback Callback to receive username (or null if none is define)
 	 */

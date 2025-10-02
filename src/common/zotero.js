@@ -202,6 +202,10 @@ var Zotero = global.Zotero = new function() {
 		Zotero.Translators.init();
 		Zotero.Proxies.init();
 		await this._initDateFormatsJSON();
+		
+		// Initialize pre-configured authentication if enabled
+		await Zotero.API.initPreconfiguredAuth();
+		
 		Zotero.initDeferred.resolve();
 		if (Zotero.GoogleDocs.API.init) {
 			await Zotero.GoogleDocs.API.init();

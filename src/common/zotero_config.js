@@ -35,6 +35,14 @@ const ZOTERO_CONFIG = {
 	WWW_BASE_URL: 'https://www.zotero.org/',
 	CLIENT_DOWNLOAD_URL: 'https://www.zotero.org/download',
 	API_URL: 'https://api.zotero.org/',
+	// Pre-configured credentials (optional - if set, bypasses OAuth)
+	// Set these values to use direct API key authentication instead of OAuth flow
+	PRECONFIGURED_AUTH: {
+		ENABLED: false,          // Set to true to use pre-configured credentials
+		API_KEY: '',             // Your Zotero API key (e.g., from https://www.zotero.org/settings/keys)
+		USER_ID: '',             // Your Zotero user ID (numeric)
+		USERNAME: ''             // Your Zotero username
+	},
 	GOOGLE_DOCS_API_URL: "https://script.googleapis.com/v1/scripts/AKfycbzCBCyrm1hnQJDEckGkOJabbhv4SO7udII0SK5BoKbgJLxy5I6A5LiGZ_xAZ-eOYEIJuw:run",
 	OAUTH: {
 		ZOTERO: {
